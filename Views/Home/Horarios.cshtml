@@ -1,0 +1,619 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Gestión de Horarios - SchoolHub";
+
+    // Obtener usuario de las cookies (reemplazo a Session)
+    var usuarioJson = HttpContextAccessor.HttpContext.Request.Cookies["UserLogged"];
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    // 2. Datos del ViewData/Model
+    var horarios = ViewData["horarios"] as List<HorarioDto> ?? new List<HorarioDto>();
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning">
+        <p>Por favor inicie sesión primero</p>
+        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">Iniciar sesión</a>
+    </div>
+}
+else
+{
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>@ViewBag.Title</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --primary: #4361ee;
+                --secondary: #3f37c9;
+                --accent: #4cc9f0;
+                --light: #f8f9fa;
+                --dark: #212529;
+                --success: #4bb543;
+                --warning: #ffcc00;
+                --danger: #ff3333;
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+                --border-radius-sm: 8px;
+                --border-radius-md: 12px;
+                --border-radius-lg: 16px;
+                --transition: all 0.3s ease;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            body {
+                background-color: #f5f7ff;
+                color: var(--dark);
+                line-height: 1.6;
+            }
+
+            .alert {
+                padding: 1rem;
+                margin: 1rem;
+                border-radius: var(--border-radius-sm);
+            }
+
+            .alert-warning {
+                background-color: #fff3cd;
+                color: #856404;
+                border: 1px solid #ffeeba;
+            }
+
+            .btn {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: var(--border-radius-sm);
+                text-decoration: none;
+                margin-top: 0.5rem;
+            }
+
+            .btn-primary {
+                background-color: var(--primary);
+                color: white;
+                border: none;
+            }
+
+            header {
+                background-color: white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 1.5rem 0;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .container {
+                width: 85%;
+                max-width: 1200px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+            }
+
+                .logo i {
+                    margin-right: 10px;
+                    color: var(--accent);
+                }
+
+            .nav-links {
+                display: flex;
+                list-style: none;
+            }
+
+                .nav-links li {
+                    margin-left: 2rem;
+                }
+
+                .nav-links a {
+                    text-decoration: none;
+                    color: var(--dark);
+                    font-weight: 500;
+                    transition: color 0.3s;
+                }
+
+                    .nav-links a:hover {
+                        color: var(--primary);
+                    }
+
+                    .nav-links a.active {
+                        color: var(--primary);
+                        font-weight: 600;
+                    }
+
+            .main-content {
+                padding: 8rem 0 2rem;
+            }
+
+            .page-header {
+                margin-bottom: 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .page-title h1 {
+                font-size: 2rem;
+                color: var(--dark);
+            }
+
+            .page-title p {
+                color: #6c757d;
+            }
+
+            .btn {
+                display: inline-block;
+                padding: 0.8rem 1.8rem;
+                border-radius: var(--border-radius-sm);
+                text-decoration: none;
+                font-weight: 600;
+                transition: var(--transition);
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+
+            .btn-primary {
+                background-color: var(--primary);
+                color: white;
+            }
+
+                .btn-primary:hover {
+                    background-color: var(--secondary);
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+                }
+
+            .btn-success {
+                background-color: var(--success);
+                color: white;
+            }
+
+                .btn-success:hover {
+                    background-color: #3a9a32;
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(75, 181, 67, 0.3);
+                }
+
+            .btn-warning {
+                background-color: var(--warning);
+                color: var(--dark);
+            }
+
+                .btn-warning:hover {
+                    background-color: #e6b800;
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(255, 204, 0, 0.3);
+                }
+
+            .btn-danger {
+                background-color: var(--danger);
+                color: white;
+            }
+
+                .btn-danger:hover {
+                    background-color: #e60000;
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(255, 51, 51, 0.3);
+                }
+
+            .btn-sm {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .schedules-container {
+                background-color: white;
+                border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-sm);
+                padding: 1.5rem;
+            }
+
+            .schedules-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                border-bottom: 1px solid #e9ecef;
+                padding-bottom: 1rem;
+            }
+
+            .schedules-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+            }
+
+            .schedule-filters {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .filter-label {
+                font-size: 0.9rem;
+                color: #6c757d;
+                font-weight: 500;
+            }
+
+            .filter-select {
+                padding: 0.5rem;
+                border-radius: var(--border-radius-sm);
+                border: 1px solid #e9ecef;
+                background-color: var(--light);
+                transition: var(--transition);
+            }
+
+                .filter-select:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+                }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            .schedules-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+                .schedules-table th {
+                    background-color: var(--primary);
+                    color: white;
+                    padding: 1rem;
+                    text-align: left;
+                    font-weight: 600;
+                }
+
+                .schedules-table td {
+                    padding: 1rem;
+                    border-bottom: 1px solid #e9ecef;
+                    vertical-align: middle;
+                }
+
+                .schedules-table tr:hover {
+                    background-color: #f8f9fa;
+                }
+
+            .day-badge {
+                background-color: var(--primary);
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: var(--border-radius-sm);
+                font-size: 0.8rem;
+                font-weight: 500;
+                display: inline-block;
+            }
+
+            .time-slot {
+                font-weight: 600;
+                color: var(--dark);
+            }
+
+            .action-buttons {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .no-schedules {
+                text-align: center;
+                padding: 2rem;
+                color: #6c757d;
+            }
+
+            .search-container {
+                margin-bottom: 1.5rem;
+                display: flex;
+                gap: 1rem;
+            }
+
+            .search-input {
+                flex: 1;
+                padding: 0.75rem;
+                border-radius: var(--border-radius-sm);
+                border: 1px solid #e9ecef;
+                transition: var(--transition);
+            }
+
+                .search-input:focus {
+                    outline: none;
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+                }
+
+            .search-icon {
+                position: absolute;
+                left: 1rem;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #6c757d;
+            }
+
+            .search-wrapper {
+                position: relative;
+                flex: 1;
+            }
+
+            @@media (max-width: 768px) {
+                .main-content {
+                    padding: 6rem 0 2rem;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .nav-links {
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                    .nav-links li {
+                        margin: 0.5rem;
+                    }
+
+                .page-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1rem;
+                }
+
+                .schedules-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1rem;
+                }
+
+                .schedule-filters {
+                    flex-wrap: wrap;
+                    width: 100%;
+                }
+
+                .filter-group {
+                    width: 100%;
+                }
+
+                .action-buttons {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <a href="@Url.Action("Index", "Home")" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    SchoolHub
+                </a>
+                <ul class="nav-links">
+                    <li>@Html.ActionLink("Estudiantes", "Estudiantes", "Home")</li>
+                    <li>@Html.ActionLink("Profesores", "Profesores", "Home")</li>
+                    <li>@Html.ActionLink("Clases", "Clases", "Home")</li>
+                    <li>@Html.ActionLink("Horarios", "Horarios", "Home", null, new { @class = "active" })</li>
+                    <li><a href="#"><i class="fas fa-user"></i> @usuario.Nombres</a></li>
+                    <li>@Html.ActionLink("Cerrar Sesión", "CerrarSesion", "Home")</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1><i class="fas fa-calendar-alt"></i> Gestión de Horarios</h1>
+                        <p>Administra y gestiona los horarios académicos</p>
+                    </div>
+                    <div>
+                        @Html.ActionLink("Agregar Horarios", "CrearHorarios", "Home", null, new { @class = "btn btn-success" })
+                        @Html.ActionLink("Generar Horarios", "GenerarHorarios", "Home", null, new { @class = "btn btn-primary" })
+                    </div>
+                </div>
+
+                <div class="schedules-container">
+                    <div class="schedules-header">
+                        <h2 class="schedules-title"><i class="fas fa-list"></i> Listado de Horarios</h2>
+                        <div class="schedule-filters">
+                            <div class="filter-group">
+                                <label class="filter-label">Grado</label>
+                                <select id="gradeFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    <option value="1">1° Grado</option>
+                                    <option value="2">2° Grado</option>
+                                    <option value="3">3° Grado</option>
+                                    <option value="4">4° Grado</option>
+                                    <option value="5">5° Grado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Profesor</label>
+                                <select id="teacherFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    @foreach (var profesor in ViewBag.Profesores as List<SchoolHub.dtos.ProfesorDto>)
+                                    {
+                                        <option value="@profesor.IdProfesor">@profesor.Nombres @profesor.Apellidos</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Día</label>
+                                <select id="dayFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    <option value="Lunes">Lunes</option>
+                                    <option value="Martes">Martes</option>
+                                    <option value="Miércoles">Miércoles</option>
+                                    <option value="Jueves">Jueves</option>
+                                    <option value="Viernes">Viernes</option>
+                                    <option value="Sábado">Sábado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Aula</label>
+                                <select id="classroomFilter" class="filter-select">
+                                    <option value="">Todas</option>
+                                    @foreach (var aula in ViewBag.Aulas as List<string>)
+                                    {
+                                        <option value="@aula">@aula</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-container">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" placeholder="Buscar horario..." style="padding-left: 2.5rem;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="schedules-table">
+                            <thead>
+                                <tr>
+                                    <th>Clase</th>
+                                    <th>Profesor</th>
+                                    <th>Día</th>
+                                    <th>Horario</th>
+                                    <th>Aula</th>
+                                    <th>Grado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (horarios != null && horarios.Count > 0)
+                                {
+                                    foreach (var horario in horarios)
+                                    {
+                                        <tr>
+                                            <td>@horario.NombreMateria</td>
+                                            <td>@horario.NombreProfesor @horario.ApellidoProfesor</td>
+                                            <td><span class="day-badge">@horario.Dia</span></td>
+                                            <td>
+                                                <span class="time-slot">@horario.HoraInicio.ToString(@"hh\:mm") - @horario.HoraFin.ToString(@"hh\:mm")</span>
+                                            </td>
+                                            <td>@horario.Aula</td>
+                                            <td>@horario.Grado</td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="@Url.Action("EditarHorario", "Home", new { id = horario.IdHorario })"
+                                                       class="btn btn-warning btn-sm" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("DetalleHorario", "Home", new { id = horario.IdHorario })"
+                                                       class="btn btn-primary btn-sm" title="Detalles">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("EliminarHorario", "Home", new { id = horario.IdHorario })"
+                                                       class="btn btn-danger btn-sm" title="Eliminar"
+                                                       onclick="return confirm('¿Está seguro que desea eliminar este horario?');">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="no-schedules">
+                                            <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                            <p>No se encontraron horarios registrados</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Función para filtrar la tabla
+            function filterTable() {
+                const grade = document.getElementById('gradeFilter').value.toLowerCase();
+                const teacher = document.getElementById('teacherFilter').value;
+                const day = document.getElementById('dayFilter').value.toLowerCase();
+                const classroom = document.getElementById('classroomFilter').value.toLowerCase();
+                const search = document.getElementById('searchInput').value.toLowerCase();
+
+                const rows = document.querySelectorAll('.schedules-table tbody tr');
+
+                rows.forEach(row => {
+                    if (row.querySelector('.no-schedules')) return;
+
+                    const rowGrade = row.cells[5].textContent.toLowerCase();
+                    const rowTeacher = row.cells[1].textContent.toLowerCase();
+                    const rowDay = row.cells[2].textContent.toLowerCase();
+                    const rowClassroom = row.cells[4].textContent.toLowerCase();
+                    const rowText = row.textContent.toLowerCase();
+
+                    const gradeMatch = grade === '' || rowGrade.includes(grade);
+                    const teacherMatch = teacher === '' || row.cells[1].textContent.includes(document.getElementById('teacherFilter').options[document.getElementById('teacherFilter').selectedIndex].text);
+                    const dayMatch = day === '' || rowDay.includes(day);
+                    const classroomMatch = classroom === '' || rowClassroom.includes(classroom);
+                    const searchMatch = rowText.includes(search);
+
+                    if (gradeMatch && teacherMatch && dayMatch && classroomMatch && searchMatch) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Verificar si todas las filas están ocultas
+                const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+                if (visibleRows.length === 0) {
+                    document.querySelector('.no-schedules').style.display = '';
+                } else {
+                    document.querySelector('.no-schedules').style.display = 'none';
+                }
+            }
+
+            // Event listeners para los filtros
+            document.getElementById('gradeFilter').addEventListener('change', filterTable);
+            document.getElementById('teacherFilter').addEventListener('change', filterTable);
+            document.getElementById('dayFilter').addEventListener('change', filterTable);
+            document.getElementById('classroomFilter').addEventListener('change', filterTable);
+            document.getElementById('searchInput').addEventListener('keyup', filterTable);
+        </script>
+    </body>
+    </html>
+}

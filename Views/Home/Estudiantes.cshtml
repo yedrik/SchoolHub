@@ -1,0 +1,233 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Gestión de Estudiantes - SchoolHub";
+
+    // Obtener usuario de las cookies (reemplazo a Session)
+    var usuarioJson = HttpContextAccessor.HttpContext.Request.Cookies["UserLogged"];
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    // 2. Datos del ViewData/Model
+    var estudiantes = ViewData["estudiantes"] as List<EstudianteDto> ?? new List<EstudianteDto>();
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning">
+        <p>Por favor inicie sesión primero</p>
+        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">Iniciar sesión</a>
+    </div>
+}
+else
+{
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>@ViewBag.Title</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+            /* Estilos CSS se mantienen igual */
+            /* ... (todo el CSS anterior permanece igual) ... */
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <a href="@Url.Action("Index", "Home")" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    SchoolHub
+                </a>
+                <ul class="nav-links">
+                    <li>@Html.ActionLink("Estudiantes", "Estudiantes", "Home", null, new { @class = "active" })</li>
+                    <li>@Html.ActionLink("Profesores", "Profesores", "Home")</li>
+                    <li>@Html.ActionLink("Clases", "Clases", "Home")</li>
+                    <li>@Html.ActionLink("Horarios", "Horarios", "Home")</li>
+                    <li><a href="#"><i class="fas fa-user"></i> @usuario.Nombres</a></li>
+                    <li>@Html.ActionLink("Cerrar Sesión", "CerrarSesion", "Home")</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1><i class="fas fa-user-graduate"></i> Gestión de Estudiantes</h1>
+                        <p>Administra y gestiona los estudiantes registrados</p>
+                    </div>
+                    <div>
+                        @Html.ActionLink("Agregar Estudiante", "CrearEstudiante", "Home", null, new { @class = "btn btn-success" })
+                        @Html.ActionLink("Exportar a Excel", "ExportarEstudiantesExcel", "Home", null, new { @class = "btn btn-primary" })
+                        @Html.ActionLink("Volver ", "Dashboard", "Home", null, new { @class = "btn btn-secondary" })
+                    </div>
+                </div>
+
+                <div class="students-container">
+                    <div class="students-header">
+                        <h2 class="students-title"><i class="fas fa-list"></i> Listado de Estudiantes</h2>
+                        <div class="student-filters">
+                            <div class="filter-group">
+                                <label class="filter-label">Grado</label>
+                                <select id="gradeFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    <option value="1">1° Grado</option>
+                                    <option value="2">2° Grado</option>
+                                    <option value="3">3° Grado</option>
+                                    <option value="4">4° Grado</option>
+                                    <option value="5">5° Grado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Grupo</label>
+                                <select id="groupFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    <option value="A">Grupo A</option>
+                                    <option value="B">Grupo B</option>
+                                    <option value="C">Grupo C</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Estado</label>
+                                <select id="statusFilter" class="filter-select">
+                                    <option value="">Todos</option>
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="search-container">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" placeholder="Buscar estudiante..." style="padding-left: 2.5rem;">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="students-table">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Código</th>
+                                    <th>Grado</th>
+                                    <th>Grupo</th>
+                                    <th>Promedio</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (estudiantes != null && estudiantes.Count > 0)
+                                {
+                                    foreach (var estudiante in estudiantes)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <img src="@(string.IsNullOrEmpty(estudiante.Foto) ? "/Content/images/default-avatar.png" : estudiante.Foto)"
+                                                     class="student-avatar" alt="Foto del estudiante">
+                                            </td>
+                                            <td>@estudiante.Nombres @estudiante.Apellidos</td>
+                                            <td>@estudiante.Codigo</td>
+                                            <td><span class="grade-badge">@estudiante.Grado</span></td>
+                                            <td>@estudiante.Grupo</td>
+                                            <td>
+                                                <div class="progress-container">
+                                                    <div class="progress-bar" style="width: @(estudiante.Promedio)%"></div>
+                                                </div>
+                                                <small>@estudiante.Promedio.ToString("0.0")</small>
+                                            </td>
+                                            <td class="@(estudiante.Activo ? "status-active" : "status-inactive")">
+                                                @(estudiante.Activo ? "Activo" : "Inactivo")
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <a href="@Url.Action("EditarEstudiante", "Home", new { id = estudiante.IdEstudiante })"
+                                                       class="btn btn-warning btn-sm" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("DetalleEstudiante", "Home", new { id = estudiante.IdEstudiante })"
+                                                       class="btn btn-primary btn-sm" title="Detalles">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("HistorialAcademico", "Home", new { id = estudiante.IdEstudiante })"
+                                                       class="btn btn-info btn-sm" title="Historial">
+                                                        <i class="fas fa-history"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8" class="no-students">
+                                            <i class="fas fa-user-graduate" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                            <p>No se encontraron estudiantes registrados</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Función para filtrar la tabla
+            function filterTable() {
+                const grade = document.getElementById('gradeFilter').value.toLowerCase();
+                const group = document.getElementById('groupFilter').value.toLowerCase();
+                const status = document.getElementById('statusFilter').value.toLowerCase();
+                const search = document.getElementById('searchInput').value.toLowerCase();
+
+                const rows = document.querySelectorAll('.students-table tbody tr');
+
+                rows.forEach(row => {
+                    if (row.querySelector('.no-students')) return;
+
+                    const rowGrade = row.cells[3].textContent.toLowerCase();
+                    const rowGroup = row.cells[4].textContent.toLowerCase();
+                    const rowStatus = row.cells[6].textContent.toLowerCase();
+                    const rowText = row.textContent.toLowerCase();
+
+                    const gradeMatch = grade === '' || rowGrade.includes(grade);
+                    const groupMatch = group === '' || rowGroup.includes(group);
+                    const statusMatch = status === '' || rowStatus.includes(status);
+                    const searchMatch = rowText.includes(search);
+
+                    if (gradeMatch && groupMatch && statusMatch && searchMatch) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Verificar si todas las filas están ocultas
+                const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+                if (visibleRows.length === 0) {
+                    document.querySelector('.no-students').style.display = '';
+                } else {
+                    document.querySelector('.no-students').style.display = 'none';
+                }
+            }
+
+            // Event listeners para los filtros
+            document.getElementById('gradeFilter').addEventListener('change', filterTable);
+            document.getElementById('groupFilter').addEventListener('change', filterTable);
+            document.getElementById('statusFilter').addEventListener('change', filterTable);
+            document.getElementById('searchInput').addEventListener('keyup', filterTable);
+        </script>
+    </body>
+    </html>
+}

@@ -1,0 +1,569 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Tareas - SchoolHub";
+
+    // Get authenticated user from secure cookie
+    var usuarioJson = HttpContextAccessor.HttpContext?.Request.Cookies["UserLogged"];
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    List<TareaDto> tareas = ViewBag.Tareas as List<TareaDto> ?? new List<TareaDto>();
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning text-center py-4">
+        <div class="alert-icon">
+            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+        </div>
+        <h4 class="alert-heading">Acceso no autorizado</h4>
+        <p>Debe iniciar sesión para ver sus tareas</p>
+        <div class="mt-3">
+            <a href="@Url.Action("Login", "Account")" class="btn btn-primary px-4">
+                <i class="fas fa-sign-in-alt me-2"></i> Iniciar sesión
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>@ViewBag.Title</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            :root {
+                --primary: #4361ee;
+                --secondary: #3f37c9;
+                --accent: #4cc9f0;
+                --light: #f8f9fa;
+                --dark: #212529;
+                --success: #4bb543;
+                --warning: #ffcc00;
+                --danger: #ff3333;
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+                --border-radius-sm: 8px;
+                --border-radius-md: 12px;
+                --border-radius-lg: 16px;
+                --transition: all 0.3s ease;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            body {
+                background-color: #f5f7ff;
+                color: var(--dark);
+                line-height: 1.6;
+            }
+
+            .alert {
+                padding: 1rem;
+                margin: 1rem;
+                border-radius: var(--border-radius-sm);
+            }
+
+            .alert-warning {
+                background-color: #fff3cd;
+                color: #856404;
+                border: 1px solid #ffeeba;
+            }
+
+            .btn {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: var(--border-radius-sm);
+                text-decoration: none;
+                margin-top: 0.5rem;
+            }
+
+            .btn-primary {
+                background-color: var(--primary);
+                color: white;
+                border: none;
+            }
+
+            header {
+                background-color: white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 1.5rem 0;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .container {
+                width: 85%;
+                max-width: 1200px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+            }
+
+                .logo i {
+                    margin-right: 10px;
+                    color: var(--accent);
+                }
+
+            .nav-links {
+                display: flex;
+                list-style: none;
+            }
+
+                .nav-links li {
+                    margin-left: 2rem;
+                }
+
+                .nav-links a {
+                    text-decoration: none;
+                    color: var(--dark);
+                    font-weight: 500;
+                    transition: color 0.3s;
+                }
+
+                    .nav-links a:hover {
+                        color: var(--primary);
+                    }
+
+            .main-content {
+                padding: 8rem 0 2rem;
+            }
+
+            .page-header {
+                margin-bottom: 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .page-title h1 {
+                font-size: 2rem;
+                color: var(--dark);
+            }
+
+            .page-title p {
+                color: #6c757d;
+            }
+
+            .btn {
+                display: inline-block;
+                padding: 0.8rem 1.8rem;
+                border-radius: var(--border-radius-sm);
+                text-decoration: none;
+                font-weight: 600;
+                transition: var(--transition);
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+
+            .btn-primary {
+                background-color: var(--primary);
+                color: white;
+            }
+
+                .btn-primary:hover {
+                    background-color: var(--secondary);
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+                }
+
+            .btn-secondary {
+                background-color: var(--accent);
+                color: white;
+            }
+
+                .btn-secondary:hover {
+                    background-color: #3aa8c9;
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(76, 201, 240, 0.3);
+                }
+
+            .tasks-container {
+                background-color: white;
+                border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-sm);
+                padding: 1.5rem;
+            }
+
+            .tasks-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                border-bottom: 1px solid #e9ecef;
+                padding-bottom: 1rem;
+            }
+
+            .tasks-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+            }
+
+            .task-filters {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .filter-btn {
+                padding: 0.5rem 1rem;
+                border-radius: var(--border-radius-sm);
+                background-color: var(--light);
+                border: none;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+                .filter-btn.active {
+                    background-color: var(--primary);
+                    color: white;
+                }
+
+                .filter-btn:hover {
+                    background-color: #e6e9ff;
+                }
+
+            .task-list {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .task-card {
+                border: 1px solid #e9ecef;
+                border-radius: var(--border-radius-sm);
+                padding: 1.5rem;
+                transition: var(--transition);
+            }
+
+                .task-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .task-card.pending {
+                    border-left: 4px solid var(--warning);
+                }
+
+                .task-card.completed {
+                    border-left: 4px solid var(--success);
+                }
+
+                .task-card.overdue {
+                    border-left: 4px solid var(--danger);
+                }
+
+            .task-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
+            }
+
+            .task-title {
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+
+            .task-course {
+                background-color: #e6e9ff;
+                color: var(--primary);
+                padding: 0.25rem 0.5rem;
+                border-radius: var(--border-radius-sm);
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+
+            .task-due {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: #6c757d;
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+            }
+
+                .task-due i {
+                    color: var(--primary);
+                }
+
+            .task-time-left {
+                font-weight: 600;
+                margin-left: 0.5rem;
+            }
+
+                .task-time-left.urgent {
+                    color: var(--danger);
+                }
+
+                .task-time-left.warning {
+                    color: var(--warning);
+                }
+
+                .task-time-left.normal {
+                    color: var(--success);
+                }
+
+            .task-description {
+                color: #6c757d;
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .task-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .task-btn {
+                padding: 0.5rem 1rem;
+                border-radius: var(--border-radius-sm);
+                font-size: 0.8rem;
+                border: none;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+                .task-btn.complete {
+                    background-color: var(--success);
+                    color: white;
+                }
+
+                .task-btn.edit {
+                    background-color: var(--accent);
+                    color: white;
+                }
+
+                .task-btn.delete {
+                    background-color: var(--danger);
+                    color: white;
+                }
+
+                .task-btn:hover {
+                    opacity: 0.9;
+                    transform: translateY(-2px);
+                }
+
+            .no-tasks {
+                text-align: center;
+                padding: 2rem;
+                color: #6c757d;
+            }
+
+            @@media (max-width: 768px) {
+                .main-content {
+                    padding: 6rem 0 2rem;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .nav-links {
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                    .nav-links li {
+                        margin: 0.5rem;
+                    }
+
+                .page-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1rem;
+                }
+
+                .task-filters {
+                    flex-wrap: wrap;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <a href="@Url.Action("Index", "Home")" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    SchoolHub
+                </a>
+                <ul class="nav-links">
+                    <li>@Html.ActionLink("Dashboard", "Dashboard", "Home")</li>
+                    <li>@Html.ActionLink("Cursos", "Cursos", "Home")</li>
+                    <li>@Html.ActionLink("Tareas", "Tarea", "Home")</li>
+                    <li>@Html.ActionLink("Calendario", "Calendario", "Home")</li>
+                    <li>@Html.ActionLink("MostrarPerfil", "MostrarPerfil", "Home")</li>
+                    <li>@Html.ActionLink("Cerrar Sesión", "CerrarSesion", "Home")</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1>Mis Tareas</h1>
+                        <p>Administra tus tareas y actividades pendientes</p>
+                    </div>
+                    <div>
+                        <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary" style="margin-right: 10px;">
+                            <i class="fas fa-arrow-left"></i> Volver 
+                        </a>
+                        <button class="btn btn-primary" onclick="location.href='@Url.Action("NuevaTarea", "Home")'">
+                            <i class="fas fa-plus"></i> Nueva Tarea
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tasks-container">
+                    <div class="tasks-header">
+                        <h2 class="tasks-title">Tareas Pendientes</h2>
+                        <div class="task-filters">
+                            <button class="filter-btn active" data-filter="all">Todas</button>
+                            <button class="filter-btn" data-filter="pending">Pendientes</button>
+                            <button class="filter-btn" data-filter="completed">Completadas</button>
+                            <button class="filter-btn" data-filter="overdue">Vencidas</button>
+                        </div>
+                    </div>
+
+                    <div class="task-list">
+                        @if (tareas != null && tareas.Count > 0)
+                        {
+                            foreach (var tarea in tareas)
+                            {
+                                var tiempoRestante = tarea.FechaEntrega - DateTime.Now;
+                                var diasRestantes = tiempoRestante.Days;
+                                var horasRestantes = tiempoRestante.Hours;
+                                var estadoTiempo = "normal";
+                                var textoPlazo = "";
+
+                                if (diasRestantes < 0)
+                                {
+                                    textoPlazo = "Vencida hace " + Math.Abs(diasRestantes) + " días";
+                                    estadoTiempo = "overdue";
+                                }
+                                else if (diasRestantes == 0)
+                                {
+                                    textoPlazo = "Vence hoy";
+                                    estadoTiempo = "urgent";
+                                }
+                                else if (diasRestantes <= 3)
+                                {
+                                    textoPlazo = diasRestantes + " días restantes";
+                                    estadoTiempo = "warning";
+                                }
+                                else
+                                {
+                                    textoPlazo = diasRestantes + " días restantes";
+                                    estadoTiempo = "normal";
+                                }
+
+                                <div class="task-card @(tarea.Estado == "Completada" ? "completed" : tarea.FechaEntrega < DateTime.Now ? "overdue" : "pending")"
+                                     data-status="@(tarea.Estado == "Completada" ? "completed" : tarea.FechaEntrega < DateTime.Now ? "overdue" : "pending")">
+                                    <div class="task-header">
+                                        <h3 class="task-title">@tarea.Titulo</h3>
+                                        <span class="task-course">tarea.CursoNombre</span>
+                                    </div>
+                                    <div class="task-due">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>Fecha de entrega: @tarea.FechaEntrega.ToString("dd/MM/yyyy")</span>
+                                        <span class="task-time-left @estadoTiempo">• @textoPlazo</span>
+                                    </div>
+                                    <p class="task-description">@tarea.Descripcion</p>
+                                    <div class="task-actions">
+                                        @if (tarea.Estado != "Completada")
+                                        {
+                                            <button class="task-btn complete" onclick="marcarCompletada(@tarea.IdTarea)">
+                                                <i class="fas fa-check"></i> Completar
+                                            </button>
+                                        }
+                                        <button class="task-btn edit" onclick="editarTarea(@tarea.IdTarea)">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </button>
+                                        <button class="task-btn delete" onclick="eliminarTarea(@tarea.IdTarea)">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="no-tasks">
+                                <i class="fas fa-tasks" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>No tienes tareas pendientes</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function marcarCompletada(idTarea) {
+            if (confirm('¿Marcar esta tarea como completada?')) {
+                window.location.href = '@Url.Action("MarcarTareaCompletada", "Home")' + '?id=' + idTarea;
+            }
+        }
+
+        function editarTarea(idTarea) {
+            window.location.href = '@Url.Action("EditarTarea", "Home")' + '?id=' + idTarea;
+        }
+
+        function eliminarTarea(idTarea) {
+            if (confirm('¿Estás seguro de eliminar esta tarea?')) {
+                window.location.href = '@Url.Action("EliminarTarea", "Home")' + '?id=' + idTarea;
+            }
+        }
+
+        // Filtros de tareas
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Actualizar botones activos
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.dataset.filter;
+                const taskCards = document.querySelectorAll('.task-card');
+
+                taskCards.forEach(card => {
+                    if (filter === 'all') {
+                        card.style.display = 'block';
+                    } else {
+                        if (card.dataset.status === filter) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+        </script>
+    </body>
+</html>
+}

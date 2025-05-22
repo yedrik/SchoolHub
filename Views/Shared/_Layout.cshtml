@@ -1,0 +1,44 @@
+﻿<body>
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+        <div class="container">
+           
+            <!-- Botón para dispositivos móviles -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Menú de navegación -->
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+                    <!-- Puedes descomentar lo que necesites -->
+                    @*
+                        <li class="nav-item">
+                            @Html.ActionLink("Inicio", "Index", "Home", null, new { @class = "nav-link" })
+                        </li>
+                        <li class="nav-item">
+                            @Html.ActionLink("Iniciar sesión", "IniciarSesion", "Home", null, new { @class = "nav-link" })
+                        </li>
+                        <li class="nav-item">
+                            @Html.ActionLink("Registrarse", "Formulario_Registro", "Home", null, new { @class = "nav-link" })
+                        </li>
+                        <li class="nav-item">
+                            @Html.ActionLink("Ver Usuarios", "MostrarUsuarios", "Usuario", null, new { @class = "nav-link" })
+                        </li>
+                    *@
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer class="text-center text-muted py-3">
+            <p>&copy; @DateTime.Now.Year - SchoolHub</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/jquery-3.7.0.js"></script>
+</body>

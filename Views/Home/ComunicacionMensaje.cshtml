@@ -1,0 +1,628 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Mensajes - SchoolHub";
+
+    // Obtener usuario de las cookies(reemplazo a Session)
+    var usuarioJson = HttpContextAccessor.HttpContext.Request.Cookies["UserLogged"];
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    List<EventoDto> eventos = ViewBag.Eventos as List<EventoDto> ?? new List<EventoDto>();
+
+    // 2. Datos del ViewData/Model (sin cambios)
+    var mensajes = ViewData["mensajes"] as List<MensajeDto> ?? new List<MensajeDto>();
+    var profesores = ViewData["profesores"] as List<ProfesorDto> ?? new List<ProfesorDto>();
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning">
+        <p>Por favor inicie sesión primero</p>
+        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">Iniciar sesión</a>
+    </div>
+}
+else
+{
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>@ViewBag.Title</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --primary: #4361ee;
+                --secondary: #3f37c9;
+                --accent: #4cc9f0;
+                --light: #f8f9fa;
+                --dark: #212529;
+                --success: #4bb543;
+                --warning: #ffcc00;
+                --danger: #ff3333;
+                --gray: #6c757d;
+                --primary-light: rgba(67, 97, 238, 0.1);
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+                --border-radius-sm: 8px;
+                --border-radius-md: 12px;
+                --border-radius-lg: 16px;
+                --transition: all 0.3s ease;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            body {
+                background-color: #f5f7ff;
+                color: var(--dark);
+                line-height: 1.6;
+            }
+
+            header {
+                background-color: white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 1.5rem 0;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .container {
+                width: 85%;
+                max-width: 1200px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+            }
+
+                .logo i {
+                    margin-right: 10px;
+                    color: var(--accent);
+                }
+
+            .nav-links {
+                display: flex;
+                list-style: none;
+            }
+
+                .nav-links li {
+                    margin-left: 2rem;
+                }
+
+                .nav-links a {
+                    text-decoration: none;
+                    color: var(--dark);
+                    font-weight: 500;
+                    transition: color 0.3s;
+                }
+
+                    .nav-links a:hover {
+                        color: var(--primary);
+                    }
+
+                    .nav-links a.active {
+                        color: var(--primary);
+                        font-weight: 600;
+                    }
+
+            .main-content {
+                padding: 8rem 0 2rem;
+            }
+
+            .page-header {
+                margin-bottom: 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .page-title h1 {
+                font-size: 2rem;
+                color: var(--dark);
+            }
+
+            .page-title p {
+                color: var(--gray);
+            }
+
+            .btn-secondary {
+                background-color: var(--gray);
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: var(--border-radius-sm);
+                font-weight: 500;
+                text-decoration: none;
+                transition: var(--transition);
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+                .btn-secondary:hover {
+                    background-color: #5a6268;
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-sm);
+                }
+
+            .messages-container {
+                display: flex;
+                background-color: white;
+                border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-sm);
+                height: 70vh;
+                overflow: hidden;
+            }
+
+            .contacts-panel {
+                width: 30%;
+                border-right: 1px solid #eee;
+                overflow-y: auto;
+            }
+
+            .contacts-header {
+                padding: 1rem;
+                font-weight: 600;
+                border-bottom: 1px solid #eee;
+                background-color: var(--light);
+            }
+
+            .contact-item {
+                display: flex;
+                align-items: center;
+                padding: 1rem;
+                cursor: pointer;
+                transition: var(--transition);
+                border-bottom: 1px solid #f5f5f5;
+            }
+
+                .contact-item:hover {
+                    background-color: var(--primary-light);
+                }
+
+                .contact-item.active {
+                    background-color: var(--primary-light);
+                }
+
+            .contact-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-right: 1rem;
+            }
+
+            .contact-name {
+                flex: 1;
+                font-weight: 500;
+            }
+
+            .contact-status {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                margin-left: 0.5rem;
+            }
+
+                .contact-status.online {
+                    background-color: var(--success);
+                }
+
+                .contact-status.offline {
+                    background-color: var(--gray);
+                }
+
+            .no-messages, .no-contact-selected {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                text-align: center;
+                color: var(--gray);
+                padding: 2rem;
+            }
+
+                .no-messages i, .no-contact-selected i {
+                    font-size: 3rem;
+                    margin-bottom: 1rem;
+                    color: var(--accent);
+                }
+
+                .no-messages p, .no-contact-selected p {
+                    margin-bottom: 0.5rem;
+                }
+
+            .chat-panel {
+                width: 70%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .chat-header {
+                display: flex;
+                align-items: center;
+                padding: 1rem;
+                border-bottom: 1px solid #eee;
+            }
+
+            .chat-avatar {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-right: 1rem;
+            }
+
+            .chat-info h3 {
+                font-size: 1.2rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .chat-info p {
+                font-size: 0.85rem;
+                color: var(--gray);
+            }
+
+            .chat-messages {
+                flex: 1;
+                padding: 1rem;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .message {
+                max-width: 70%;
+                padding: 0.75rem 1rem;
+                border-radius: var(--border-radius-md);
+                position: relative;
+            }
+
+            .message-incoming {
+                align-self: flex-start;
+                background-color: #f1f1f1;
+                border-top-left-radius: 0;
+            }
+
+            .message-outgoing {
+                align-self: flex-end;
+                background-color: var(--primary);
+                color: white;
+                border-top-right-radius: 0;
+            }
+
+            .message-time {
+                font-size: 0.7rem;
+                text-align: right;
+                margin-top: 0.5rem;
+                opacity: 0.8;
+            }
+
+            .message-outgoing .message-time {
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .chat-input {
+                padding: 1rem;
+                border-top: 1px solid #eee;
+            }
+
+            .message-form {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .message-input {
+                flex: 1;
+                border: 1px solid #ddd;
+                border-radius: var(--border-radius-sm);
+                padding: 0.75rem 1rem;
+                resize: none;
+                outline: none;
+                transition: var(--transition);
+                font-family: inherit;
+                max-height: 150px;
+            }
+
+                .message-input:focus {
+                    border-color: var(--primary);
+                    box-shadow: 0 0 0 2px var(--primary-light);
+                }
+
+            .send-btn {
+                background-color: var(--primary);
+                color: white;
+                border: none;
+                border-radius: var(--border-radius-sm);
+                width: 50px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+                .send-btn:hover {
+                    background-color: var(--secondary);
+                }
+
+            @@media (max-width: 768px) {
+                .main-content {
+                    padding: 6rem 0 2rem;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .nav-links {
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                    .nav-links li {
+                        margin: 0.5rem;
+                    }
+
+                .page-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .messages-container {
+                    flex-direction: column;
+                }
+
+                .contacts-panel {
+                    width: 100%;
+                    height: auto;
+                    max-height: 300px;
+                }
+
+                .chat-panel {
+                    height: 500px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <a href="@Url.Action("Index", "Home")" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    SchoolHub
+                </a>
+                <ul class="nav-links">
+                    <li>@Html.ActionLink("Estudiantes", "Estudiantes", "Home")</li>
+                    <li>@Html.ActionLink("Profesores", "Profesores", "Home")</li>
+                    <li>@Html.ActionLink("Clases", "Clases", "Home")</li>
+                    <li>@Html.ActionLink("Mensajes", "Mensajes", "Home", null, new { @class = "active" })</li>
+                    <li><a href="#"><i class="fas fa-user"></i> @usuario.Nombres</a></li>
+                    <li>@Html.ActionLink("Cerrar Sesión", "CerrarSesion", "Home")</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h1><i class="fas fa-comments"></i> Mensajes</h1>
+                        <p>Comunícate en vivo con tus profesores</p>
+                    </div>
+                    <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+
+                <div class="messages-container">
+                    <div class="contacts-panel">
+                        <div class="contacts-header">Profesores</div>
+                        @if (profesores != null && profesores.Count > 0)
+                        {
+                            foreach (var profesor in profesores)
+                            {
+                                <div class="contact-item" data-id="@profesor.IdProfesor">
+                                    <img src="@(string.IsNullOrEmpty(profesor.Foto) ? "/Content/images/default-avatar.png" : profesor.Foto)"
+                                         class="contact-avatar" alt="Foto del profesor">
+                                    <div class="contact-name">@profesor.Nombres @profesor.Apellidos</div>
+                                    <div class="contact-status @(profesor.EnLinea ? "online" : "offline")"></div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="no-messages">
+                                <i class="fas fa-user-tie" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>No hay profesores disponibles</p>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="chat-panel">
+                        <div id="chatContent">
+                            <div class="no-contact-selected">
+                                <i class="fas fa-comment-dots"></i>
+                                <h3>Selecciona un profesor para comenzar a chatear</h3>
+                                <p>Elige un contacto de la lista para ver los mensajes anteriores o iniciar una nueva conversación</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Función para cargar los mensajes de un profesor
+            function loadMessages(profesorId) {
+                // Aquí iría la llamada AJAX para cargar los mensajes del profesor
+                // Por ahora simulamos datos de ejemplo
+                const profesor = document.querySelector(`.contact-item[data-id="${profesorId}"]`);
+                const nombreProfesor = profesor.querySelector('.contact-name').textContent;
+                const avatarProfesor = profesor.querySelector('.contact-avatar').src;
+
+                // Simulamos mensajes de ejemplo
+                const messages = [
+                    {
+                        id: 1,
+                        contenido: "Hola, ¿cómo estás? Recuerda que la tarea de matemáticas es para mañana.",
+                        fecha: "2023-05-15T10:30:00",
+                        enviado_por_profesor: true
+                    },
+                    {
+                        id: 2,
+                        contenido: "Hola profesor, estoy trabajando en ella. ¿Podría explicarme el ejercicio 5?",
+                        fecha: "2023-05-15T11:45:00",
+                        enviado_por_profesor: false
+                    },
+                    {
+                        id: 3,
+                        contenido: "Claro, el ejercicio 5 es sobre aplicar el teorema de Pitágoras. ¿Qué parte específica no entiendes?",
+                        fecha: "2023-05-15T12:15:00",
+                        enviado_por_profesor: true
+                    }
+                ];
+
+                // Construir el HTML del chat
+                let chatHTML = `
+                    <div class="chat-header">
+                        <img src="${avatarProfesor}" class="chat-avatar" alt="Foto del profesor">
+                        <div class="chat-info">
+                            <h3>${nombreProfesor}</h3>
+                            <p>${profesor.querySelector('.contact-status').classList.contains('online') ? 'En línea' : 'Desconectado'}</p>
+                        </div>
+                    </div>
+                    <div class="chat-messages">
+                `;
+
+                if (messages.length > 0) {
+                    messages.forEach(msg => {
+                        const fecha = new Date(msg.fecha);
+                        const hora = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+                        chatHTML += `
+                            <div class="message ${msg.enviado_por_profesor ? 'message-incoming' : 'message-outgoing'}">
+                                <div>${msg.contenido}</div>
+                                <div class="message-time">${hora}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    chatHTML += `
+                        <div class="no-messages">
+                            <i class="fas fa-comment-slash" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>No hay mensajes con este profesor</p>
+                            <p>Envía un mensaje para iniciar la conversación</p>
+                        </div>
+                    `;
+                }
+
+                chatHTML += `
+                    </div>
+                    <div class="chat-input">
+                        <form class="message-form">
+                            <textarea class="message-input" placeholder="Escribe tu mensaje aquí..." rows="1"></textarea>
+                            <button type="submit" class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                `;
+
+                document.getElementById('chatContent').innerHTML = chatHTML;
+
+                // Configurar el autoajuste del textarea
+                const textarea = document.querySelector('.message-input');
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
+
+                // Configurar el envío del mensaje
+                document.querySelector('.message-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const message = textarea.value.trim();
+                    if (message) {
+                        // Aquí iría el código para enviar el mensaje al servidor
+                        console.log(`Mensaje enviado a ${nombreProfesor}: ${message}`);
+
+                        // Simulamos que el mensaje se envió correctamente
+                        const horaActual = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                        const chatMessages = document.querySelector('.chat-messages');
+
+                        chatMessages.innerHTML += `
+                            <div class="message message-outgoing">
+                                <div>${message}</div>
+                                <div class="message-time">${horaActual}</div>
+                            </div>
+                        `;
+
+                        // Limpiar el textarea y resetear su altura
+                        textarea.value = '';
+                        textarea.style.height = 'auto';
+
+                        // Hacer scroll al final de los mensajes
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                });
+            }
+
+            // Configurar los eventos de clic en los contactos
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remover la clase active de todos los contactos
+                    document.querySelectorAll('.contact-item').forEach(i => {
+                        i.classList.remove('active');
+                    });
+
+                    // Añadir la clase active al contacto seleccionado
+                    this.classList.add('active');
+
+                    // Cargar los mensajes del profesor seleccionado
+                    const profesorId = this.getAttribute('data-id');
+                    loadMessages(profesorId);
+                });
+            });
+
+            // Simular conexión en tiempo real (en un entorno real usaríamos SignalR o similar)
+            setInterval(() => {
+                // Simular cambios de estado en línea/offline
+                document.querySelectorAll('.contact-status').forEach(status => {
+                    if (Math.random() > 0.7) {
+                        status.classList.toggle('online');
+                        status.classList.toggle('offline');
+                    }
+                });
+            }, 10000);
+        </script>
+    </body>
+    </html>
+}

@@ -1,0 +1,353 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Perfil";
+
+    // Obtener usuario de las cookies (reemplazo a Session)
+    var usuarioJson = HttpContextAccessor.HttpContext.Request.Cookies["UserLogged"];
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    // 2. Datos del ViewData/Model
+    var nivelAcademico = ViewData["nivelAcademico"]?.ToString() ?? "No especificado";
+    var grado = ViewData["grado"]?.ToString() ?? "No especificado";
+    var especialidad = ViewData["especialidad"]?.ToString() ?? "No especificado";
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning">
+        <p>Por favor inicie sesión primero</p>
+        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">Iniciar sesión</a>
+    </div>
+}
+else
+{
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mi Perfil - SchoolHub</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            :root {
+                --primary: #4361ee;
+                --secondary: #3f37c9;
+                --accent: #4cc9f0;
+                --light: #f8f9fa;
+                --dark: #212529;
+                --gray: #6c757d;
+                --success: #4bb543;
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.15);
+                --border-radius-sm: 8px;
+                --border-radius-md: 12px;
+                --border-radius-lg: 16px;
+                --transition: all 0.3s ease;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            body {
+                background-color: #f5f7ff;
+                color: var(--dark);
+                line-height: 1.6;
+            }
+
+            header {
+                background-color: white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                padding: 1.5rem 0;
+                position: fixed;
+                width: 100%;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .container {
+                width: 85%;
+                max-width: 1200px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .logo {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                text-decoration: none;
+            }
+
+                .logo i {
+                    margin-right: 10px;
+                    color: var(--accent);
+                }
+
+            .nav-links {
+                display: flex;
+                list-style: none;
+            }
+
+                .nav-links li {
+                    margin-left: 2rem;
+                }
+
+                .nav-links a {
+                    text-decoration: none;
+                    color: var(--dark);
+                    font-weight: 500;
+                    transition: color 0.3s;
+                }
+
+                    .nav-links a:hover {
+                        color: var(--primary);
+                    }
+
+            .profile-container {
+                max-width: 1000px;
+                margin: 8rem auto 2rem;
+                background-color: white;
+                padding: 2.5rem;
+                border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-md);
+            }
+
+            .profile-header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+
+                .profile-header h1 {
+                    font-size: 2.5rem;
+                    color: var(--primary);
+                    margin-bottom: 0.5rem;
+                }
+
+                .profile-header p {
+                    color: var(--gray);
+                    font-size: 1.1rem;
+                }
+
+            .profile-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            .profile-field {
+                margin-bottom: 1rem;
+            }
+
+                .profile-field label {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    font-weight: 500;
+                    color: var(--dark);
+                }
+
+            .profile-value {
+                width: 100%;
+                padding: 0.8rem 1rem;
+                background-color: var(--light);
+                border-radius: var(--border-radius-sm);
+                font-size: 1rem;
+                border: 1px solid #ddd;
+            }
+
+            .button-container {
+                display: flex;
+                justify-content: center;
+                gap: 1.5rem;
+                margin-top: 2rem;
+            }
+
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.8rem 1.8rem;
+                border-radius: var(--border-radius-sm);
+                text-decoration: none;
+                font-weight: 600;
+                transition: var(--transition);
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+                min-width: 200px;
+                text-align: center;
+            }
+
+            .btn-primary {
+                background-color: var(--primary);
+                color: white;
+            }
+
+                .btn-primary:hover {
+                    background-color: var(--secondary);
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+                }
+
+            .btn-secondary {
+                background-color: var(--gray);
+                color: white;
+            }
+
+                .btn-secondary:hover {
+                    background-color: #5a6268;
+                    transform: translateY(-3px);
+                    box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+                }
+
+            @@media (max-width: 768px) {
+                .profile-container {
+                    margin-top: 6rem;
+                    padding: 1.5rem;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .nav-links {
+                    margin-top: 1rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                    .nav-links li {
+                        margin: 0.5rem;
+                    }
+
+                .button-container {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .btn {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <a href="@Url.Action("Index", "Home")" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    SchoolHub
+                </a>
+                <ul class="nav-links">
+                    <li>@Html.ActionLink("Cursos", "Cursos", "Home")</li>
+                    <li>@Html.ActionLink("Tarea", "Tarea", "Home")</li>
+                    <li>@Html.ActionLink("Calendario", "Calendario", "Home")</li>
+                    <li>@Html.ActionLink("Perfil", "Perfil", "Home")</li>
+                    <li>@Html.ActionLink("Cerrar Sesión", "CerrarSesion", "Home")</li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="profile-container">
+            <div class="profile-header">
+                <h1>MI PERFIL</h1>
+                <p>Administra tu información académica</p>
+                <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <div class="profile-grid">
+                <div class="profile-field">
+                    <label>Nombres:</label>
+                    <div class="profile-value">@usuario.Nombres</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Apellidos:</label>
+                    <div class="profile-value">@usuario.Apellidos</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Fecha de Nacimiento:</label>
+                    <div class="profile-value">@usuario.FechaNacimiento.ToString("dd/MM/yyyy")</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Correo:</label>
+                    <div class="profile-value">@usuario.Correo</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Género:</label>
+                    <div class="profile-value">@usuario.Genero</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Dirección:</label>
+                    <div class="profile-value">@usuario.Direccion</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Contacto:</label>
+                    <div class="profile-value">@usuario.Contacto</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Nivel Académico:</label>
+                    <div class="profile-value">@nivelAcademico</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Grado:</label>
+                    <div class="profile-value">@grado</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Especialidad:</label>
+                    <div class="profile-value">@especialidad</div>
+                </div>
+
+                <div class="profile-field">
+                    <label>Rol:</label>
+                    <div class="profile-value">@(usuario.IdRol == 1 ? "Administrador" : usuario.IdRol == 2 ? "Profesor" : "Estudiante")</div>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button class="btn btn-secondary" type="button" onclick="actualizarDatosPersonales()">
+                    <i class="fas fa-user-edit"></i> Actualizar Datos
+                </button>
+                <button class="btn btn-primary" type="button" onclick="actualizarDatosAcademicos()">
+                    <i class="fas fa-graduation-cap"></i> Actualizar Datos Académicos
+                </button>
+            </div>
+
+            <script>
+                function actualizarDatosPersonales() {
+                    window.location.href = '@Url.Action("ActualizarDatosPersonales", "Home")';
+                }
+
+                function actualizarDatosAcademicos() {
+                    window.location.href = '@Url.Action("ActualizarDatosAcademicos", "Home")';
+                }
+            </script>
+        </div>
+    </body>
+    </html>
+}

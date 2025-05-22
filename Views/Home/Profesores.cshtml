@@ -1,0 +1,412 @@
+﻿@using SchoolHub.dtos
+@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewBag.Title = "Gestión de Profesores";
+
+    var usuarioJson = HttpContextAccessor.HttpContext.Request.Cookies["UserLogged"];
+    // ASUMO que tu UserDto tiene propiedades directas Nombres, Apellidos, etc.
+    var usuario = !string.IsNullOrEmpty(usuarioJson)
+        ? JsonSerializer.Deserialize<UserDto>(usuarioJson)
+        : null;
+
+    var profesores = ViewData["profesores"] as List<ProfesorDto> ?? new List<ProfesorDto>();
+}
+
+@if (usuario == null)
+{
+    <div class="alert alert-warning text-center py-4">
+        <h4 class="alert-heading">Acceso restringido</h4>
+        <p>Debe iniciar sesión para acceder a esta sección</p>
+        <div class="mt-3">
+            <a href="@Url.Action("IniciarSesion", "Home")" class="btn btn-primary px-4">
+                <i class="fas fa-sign-in-alt me-2"></i>Iniciar sesión
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    // Si NO usas un _Layout.cshtml, estas etiquetas están bien.
+    // Si usas un _Layout.cshtml, estas etiquetas (html, head, body) deberían estar en el layout.
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>@ViewBag.Title - SchoolHub</title>
+
+        <link href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+        <style>
+            /* Estilos Generales y Variables (ejemplo) */
+            :root {
+                --primary-color: #007bff; /* Azul primario */
+                --secondary-color: #6c757d; /* Gris secundario */
+                --success-color: #28a745; /* Verde éxito */
+                --danger-color: #dc3545; /* Rojo peligro */
+                --warning-color: #ffc107; /* Amarillo advertencia */
+                --light-bg: #f8f9fa;
+                --dark-text: #343a40;
+                --border-color: #dee2e6;
+                --card-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+                --border-radius: 0.25rem;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: var(--light-bg);
+                color: var(--dark-text);
+                padding-top: 70px; /* Ajustar si la navbar es fixed-top */
+                line-height: 1.6;
+            }
+
+            .container.body-content {
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
+
+            h2 {
+                color: var(--primary-color);
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+            }
+
+                h2 i {
+                    margin-right: 10px;
+                }
+
+            /* Navbar (ejemplo básico si no usas Bootstrap o lo personalizas) */
+            .navbar {
+                background-color: #fff;
+                border-bottom: 1px solid var(--border-color);
+                /* position: fixed; arriba ya lo tienes */
+                /* width: 100%; */
+                /* z-index: 1030; */
+            }
+
+            .navbar-brand {
+                font-weight: bold;
+                color: var(--primary-color) !important; /* Forzar color si es necesario */
+            }
+
+            .nav-link.active { /* Para el ActionLink activo */
+                font-weight: bold;
+            }
+
+            .navbar-nav .nav-link {
+                padding-right: .5rem;
+                padding-left: .5rem;
+            }
+
+            .navbar-right li a i {
+                margin-right: 5px;
+            }
+
+
+            /* Tarjetas */
+            .card {
+                background-color: #fff;
+                border: 1px solid var(--border-color);
+                border-radius: var(--border-radius);
+                box-shadow: var(--card-shadow);
+                margin-bottom: 1.5rem;
+            }
+
+            .card-header {
+                background-color: #f7f7f9; /* Un gris muy claro */
+                padding: 0.75rem 1.25rem;
+                border-bottom: 1px solid var(--border-color);
+                font-weight: bold;
+            }
+
+                .card-header i {
+                    margin-right: 8px;
+                }
+
+            .card-body {
+                padding: 1.25rem;
+            }
+
+            /* Botones */
+            .btn {
+                padding: 0.375rem 0.75rem;
+                border-radius: var(--border-radius);
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+            }
+
+            .btn-primary {
+                background-color: var(--primary-color);
+                color: white;
+                border-color: var(--primary-color);
+            }
+
+                .btn-primary:hover {
+                    background-color: #0056b3;
+                    border-color: #0056b3;
+                }
+
+            .btn-secondary {
+                background-color: var(--secondary-color);
+                color: white;
+                border-color: var(--secondary-color);
+            }
+
+            .btn-success {
+                background-color: var(--success-color);
+                color: white;
+                border-color: var(--success-color);
+            }
+
+            .btn-warning {
+                background-color: var(--warning-color);
+                color: #212529;
+                border-color: var(--warning-color);
+            }
+
+            .btn-info {
+                background-color: #17a2b8;
+                color: white;
+                border-color: #17a2b8;
+            }
+
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .text-right {
+                text-align: right;
+            }
+
+            .search-container, .add-teacher-btn {
+                margin-bottom: 1rem;
+            }
+
+
+            /* Tabla */
+            .table-container {
+                margin-top: 1.5rem;
+            }
+
+            .table thead th {
+                background-color: var(--primary-light); /* Un azul muy claro para encabezados */
+                color: var(--primary-color);
+                border-bottom-width: 2px;
+            }
+
+            .table td, .table th {
+                vertical-align: middle;
+            }
+
+            .teacher-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-right: 10px;
+            }
+
+            .status-active {
+                color: var(--success-color);
+                font-weight: bold;
+            }
+
+            .status-inactive {
+                color: var(--danger-color);
+                font-weight: bold;
+            }
+
+            .action-buttons a {
+                margin-right: 5px;
+            }
+
+                .action-buttons a:last-child {
+                    margin-right: 0;
+                }
+
+            /* Badges (ejemplo) */
+            .badge-department, .specialty-badge {
+                padding: 0.25em 0.6em;
+                font-size: 75%;
+                font-weight: 700;
+                line-height: 1;
+                text-align: center;
+                white-space: nowrap;
+                vertical-align: baseline;
+                border-radius: 0.25rem;
+                color: #fff;
+            }
+
+            .badge-department {
+                background-color: var(--secondary-color);
+            }
+
+            .specialty-badge {
+                background-color: var(--primary-color);
+                opacity: 0.8;
+            }
+
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-fixed-top">
+            @* Ejemplo navbar-fixed-top necesitaría padding-top en body *@
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    @Html.ActionLink("SchoolHub", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li>@Html.ActionLink("Estudiantes", "Estudiantes", "Home")</li>
+                        <li class="active">@Html.ActionLink("Profesores", "Profesores", "Home")</li>
+                        <li>@Html.ActionLink("Clases", "Clases", "Home")</li>
+                        <li>@Html.ActionLink("Horarios", "Horarios", "Home")</li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        @* Usa las propiedades directas de UserDto si así está definido tu DTO *@
+                        <li><a href="#"><i class="fas fa-user"></i> @(usuario.Nombres ?? "Usuario") @(usuario.Apellidos ?? "")</a></li>
+                        <li>@Html.ActionLink("Cerrar sesión", "CerrarSesion", "Home")</li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container body-content">
+            <div class="dashboard-btn" style="margin-bottom: 1rem;">
+                @* Añadido margen inferior *@
+                <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <h2><i class="fas fa-chalkboard-teacher"></i> Gestión de Profesores</h2>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-list"></i> Listado de Profesores
+                </div>
+                <div class="card-body">
+                    <div class="row" style="margin-bottom:1rem;">
+                        @* Estilo para layout de botones/búsqueda *@
+                        <div class="col-md-6 search-container">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="padding: 0.5rem 0.75rem; font-size: 1rem; font-weight: 400; line-height: 1.5; color: #495057; text-align: center; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 0.25rem 0 0 0.25rem;"><i class="fas fa-search"></i></span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Buscar profesor...">
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-right add-teacher-btn">
+                            @Html.ActionLink("Agregar Profesor", "CrearProfesor", "Home", null, new { @class = "btn btn-success" })
+                            @Html.ActionLink("Exportar a Excel", "ExportarProfesoresExcel", "Home", null, new { @class = "btn btn-primary" })
+                        </div>
+                    </div>
+
+                    <div class="table-responsive table-container">
+                        <table id="teachersTable" class="table table-striped table-bordered" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Código</th>
+                                    <th>Departamento</th>
+                                    <th>Especialidad</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (profesores != null && profesores.Any())
+                                {
+                                    foreach (var profesor in profesores)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <img src="@(string.IsNullOrEmpty(profesor.Foto) ? Url.Content("~/images/default-avatar.png") : Url.Content(profesor.Foto))"
+                                                     class="teacher-avatar" alt="Foto del profesor">
+                                                @* Asegúrate que la ruta a default-avatar.png sea correcta en wwwroot/images *@
+                                            </td>
+                                            <td>@profesor.Nombres @profesor.Apellidos</td>
+                                            <td>@profesor.Codigo</td>
+                                            <td>
+                                                <span class="badge-department">@profesor.Departamento</span>
+                                            </td>
+                                            <td>
+                                                <span class="specialty-badge">@profesor.Especialidad</span>
+                                            </td>
+                                            <td class="@(profesor.Activo ? "status-active" : "status-inactive")">
+                                                @(profesor.Activo ? "Activo" : "Inactivo")
+                                            </td>
+                                            <td class="action-buttons">
+                                                <a href="@Url.Action("EditarProfesor", "Home", new { id = profesor.IdProfesor })"
+                                                   class="btn btn-warning btn-sm" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="@Url.Action("DetalleProfesor", "Home", new { id = profesor.IdProfesor })"
+                                                   class="btn btn-primary btn-sm" title="Detalles">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </a>
+                                                @* Puedes añadir más botones si es necesario *@
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center">No hay profesores registrados.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+        </div>
+
+        <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
+        <script>
+            $(document).ready(function () {
+                var table = $('#teachersTable').DataTable({
+                    "language": {
+                        "lengthMenu": "Mostrar _MENU_ registros",
+                        "zeroRecords": "No se encontraron profesores",
+                        "info": "Mostrando _START_ a _END_ de _TOTAL_ profesores",
+                        "infoEmpty": "Mostrando 0 a 0 de 0 profesores",
+                        "infoFiltered": "(filtrado de _MAX_ registros totales)",
+                        "search": "Buscar:",
+                        "paginate": {
+                            "first": "Primero",
+                            "last": "Último",
+                            "next": "Siguiente",
+                            "previous": "Anterior"
+                        }
+                    },
+                    "responsive": true,
+                    "pageLength": 10,
+                    "columnDefs": [
+                        { "orderable": false, "targets": [0, 6] } // Foto y Acciones no ordenables
+                    ]
+                });
+
+                $('#searchInput').on('keyup', function () { // Corregido el selector para keyup
+                    table.search(this.value).draw();
+                });
+            });
+        </script>
+    </body>
+    </html>
+}
